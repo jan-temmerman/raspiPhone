@@ -1,0 +1,25 @@
+{
+  "name": "raspiphone",
+  "version": "1.0.0",
+  "description": "phone that talks on demand",
+  "main": "main.js",
+  "dependencies": {
+    "node-fetch": "^2.6.0",
+    "onoff": "^5.0.0",
+    "rpi-gpio": "^2.1.5",
+    "sound-player": "^1.0.13",
+    "text-to-mp3": "^1.0.4",
+    "text-to-speech-file": "^0.3.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "phone",
+    "api",
+    "audio"
+  ],
+  "author": "Jan Temmerman",
+  "license": "MIT"
+}
