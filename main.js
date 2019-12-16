@@ -14,8 +14,6 @@ let options = {
     player: 'mpg321'
 }
 
-console.log(button)
-
 button.watch((err, value) => {
   if (err) {
     throw err;
@@ -41,7 +39,6 @@ const writeAudioFile = (message) => {
     playSound()
     })
     .catch(function(err){
-        console.log("Error", err);
         fetchJoke()
     });
 }
