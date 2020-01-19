@@ -1,9 +1,12 @@
+// Jan Temmerman
 var soundplayer = require("sound-player")
 var fs = require('fs')
 var txtomp3 = require("text-to-mp3")
 const fetch = require("node-fetch");
 var Gpio = require('onoff').Gpio;
+const Oled = require('oled-disp');
 
+const oled = new Oled({ width: 128, height: 64, dcPin: 23, rstPin : 24}); // 7pin spi, rasp
 const button = new Gpio(26, 'in', 'rising', {debounceTimeout: 10})
 let isPlaying = false
 
@@ -65,6 +68,23 @@ const fetchJoke = () => {
     .then((resp) => resp.json()) // Transform the data into json
     .then((data) => {
         console.log(data.joke)
+        drawOled(data.joke)
         writeAudioFile(data.joke)
     })
 }
+
+const drawOled = (text) => {
+    oled.begin(function(){
+        oled.clearDisplay();
+        oled.setCursor(1, 1);
+        oled.writeString(1, text, 0, true, true);
+        oled.update();
+    });
+}
+
+// Text example (kor and eng
+// PNG example (128x64 png only)
+/*pngtolcd("a.png", false, function(err, bitmap) {
+  oled.buffer = bitmap;
+  oled.update();
+})*/
