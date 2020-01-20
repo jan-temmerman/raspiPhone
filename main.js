@@ -77,16 +77,10 @@ const handleSelectedCat = () => {
     switch(cat) {
         case 'Jokes':
             if(!isPlaying && inCat) {
-                console.log('in cat')
                 isPlaying = true
                 fetchJoke()
             } else {
-                oled.begin(function(){
-                    oled.clearDisplay();
-                    oled.setCursor(1, 1);
-                    oled.writeString(1, 'Press again for a dad joke.', 0, true, true);
-                    oled.update();
-                });
+                drawOled('Press again for a dad joke.')
                 inCat = true
             }
             break
@@ -96,7 +90,6 @@ const handleSelectedCat = () => {
                 inCat = true
                 fetchWeather()
             } else {
-                console.log(weather)
                 oled.begin(function(){
                     oled.clearDisplay();
                     oled.setCursor(1, 1);
@@ -115,12 +108,7 @@ const handleSelectedCat = () => {
             break
 
         case 'Next Bus':
-            oled.begin(function(){
-                oled.clearDisplay();
-                oled.setCursor(1, 1);
-                oled.writeString(1, 'Hier komt de volgende bus', 0, true, true);
-                oled.update();
-            });
+            drawOled('Hier komt de volgende bus')
             inCat = true
             break
 
@@ -147,12 +135,7 @@ const playSound = () => {
     player.on('complete', function() {
         isPlaying = false
         if(categories[catIndex] === 'Jokes')
-            oled.begin(function(){
-                oled.clearDisplay();
-                oled.setCursor(1, 1);
-                oled.writeString(1, 'Press again for a dad joke.', 0, true, true);
-                oled.update();
-            });
+            drawOled('Press again for a dad joke.')
     });
     
     player.on('error', function(err) {
@@ -161,13 +144,8 @@ const playSound = () => {
 }
 
 const fetchWeather = () => {
-    oled.begin(function(){
-        oled.clearDisplay();
-        oled.setCursor(1, 1);
-        oled.writeString(1, 'Fetching Weather...', 0, true, true);
-        oled.update();
-    });
-    
+    drawOled('Fetching Weather...')
+
     new Promise((resolve, reject) => {
         cities.forEach((city, index) => {
             fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=f38af33bc60ddd081f0bf546afb23f4a`)
@@ -180,7 +158,6 @@ const fetchWeather = () => {
                         description: responseJson.weather[0].description,
                     
                     })
-                    console.log([index, cities.length - 1])
                     if (index === cities.length - 1) resolve()
                 }
             })
@@ -188,18 +165,13 @@ const fetchWeather = () => {
         })
     })
     .then(() => {
-        console.log('resolved lol')
         handleSelectedCat()
     })
 }
 
 const fetchJoke = () => {
-    oled.begin(function(){
-        oled.clearDisplay();
-        oled.setCursor(1, 1);
-        oled.writeString(1, 'Fetching Joke...', 0, true, true);
-        oled.update();
-    });
+    drawOled('Fetching Joke...')
+
     fetch("https://icanhazdadjoke.com/", {
         method: 'GET',
         headers: {
