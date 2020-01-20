@@ -14,15 +14,19 @@ const button2 = new Gpio(19, 'in', 'rising', {debounceTimeout: 10})
 
 let isPlaying = false
 let inCat = false
-const categories = ['Jokes', 'Weather', 'News', 'Next Bus']
+let oledCleared = false
+const categories = ['Jokes', 'Weather', 'News', 'Next Bus', 'Exit']
 const cities = ['Mariakerke', 'Ghent', 'Antwerpen', 'Brussel', 'Rome', 'Moscow']
 let catIndex = 0
 let cityIndex = 0
 let articleIndex = 0
+let bussesIndex = 0
 let weather = []
 let articles = []
+let busses = []
 
 const updateMenu = () => {
+    oledCleared = false
     oled.begin(() => {
         if(categories[catIndex] === 'Next Bus') {
             oled.clearDisplay();
@@ -46,6 +50,14 @@ let options = {
 }
 
 updateMenu()
+
+process.on('SIGINT', function() {
+    drawOled('')
+    if(oledCleared)
+        process.exit();
+    else
+        console.log("Are you sure you want to quit? Press CTRL + C again to quit.");
+});
 
 button.watch((err, value) => {
   if (err) {
@@ -99,7 +111,7 @@ const handleSelectedCat = () => {
                     oled.setCursor(1, 1);
                     oled.writeString(1, weather[cityIndex].city, 0, true, true);
                     oled.setCursor(1, 14);
-                    oled.writeString(1, weather[cityIndex].temp + '°C', 0, true, true);
+                    oled.writeString(1, weather[cityIndex].temp.toString() + '°C', 0, true, true);
                     oled.setCursor(1, 27);
                     oled.writeString(1, weather[cityIndex].description, 0, true, true);
                     oled.update();
@@ -112,8 +124,25 @@ const handleSelectedCat = () => {
             break
 
         case 'Next Bus':
-            drawOled('Hier komt de volgende bus')
-            inCat = true
+            if(!inCat) {
+                inCat = true
+                fetchBusses()
+            } else {
+                oled.begin(function(){
+                    oled.clearDisplay();
+                    oled.setCursor(1, 1);
+                    oled.writeString(1, busses[bussesIndex].lijnnummer.toString().substr(1), 0, true, true);
+                    oled.setCursor(1, 14);
+                    oled.writeString(1, busses[bussesIndex].vertrek, 0, true, true);
+                    oled.setCursor(1, 27);
+                    oled.writeString(1, busses[bussesIndex].bestemming, 0, true, true);
+                    oled.update();
+                });
+                if(bussesIndex < busses.length - 1)
+                    ++bussesIndex
+                else
+                    bussesIndex = 0
+            }
             break
 
         case 'News':
@@ -126,6 +155,18 @@ const handleSelectedCat = () => {
                     ++articleIndex
                 else
                     articleIndex = 0
+            }
+            break
+
+        case 'Exit':
+            if(!inCat) {
+                inCat = true
+                drawOled("Are you sure you want to quit?")
+            } else {
+                drawOled('')
+                setTimeout(() => {
+                    process.exit();
+                }, 1000);
             }
             break
 
@@ -202,6 +243,48 @@ const fetchNews = () => {
     })
 }
 
+const fetchBusses = () => {
+    drawOled('Fetching Busses...')
+
+    fetch('https://api.delijn.be/DLKernOpenData/api/v1/haltes/2/202362/real-time?3', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Ocp-Apim-Subscription-Key': process.env.DL_API_KEY
+        },
+    })
+    .then((resp) => resp.json()) // Transform the data into json
+    .then((data) => {
+        let doorkomsten = data.halteDoorkomsten[0].doorkomsten
+        new Promise((resolve, reject) => {
+            doorkomsten.forEach((element, index) => {
+                let vertrek = new Date(element.dienstregelingTijdstip)
+                busses.push({
+                    lijnnummer: element.lijnnummer,
+                    vertrek: vertrek.getHours() + ':' + vertrek.getMinutes(),
+                    bestemming: element.bestemming
+                })
+                if (index === doorkomsten.length - 1) resolve()
+            })
+        })
+        .then(() => {
+            handleSelectedCat()
+        })
+    })
+}
+
+function pad(num) { 
+  return ("0"+num).slice(-2);
+}
+
+function getTimeFromDate(timestamp) {
+  var date = new Date(timestamp * 1000);
+  var hours = date.getHours();
+  var minutes = date.getMinutes();
+  var seconds = date.getSeconds();
+  return pad(hours)+":"+pad(minutes)+":"+pad(seconds)
+}
+
 const fetchJoke = () => {
     drawOled('Fetching Joke...')
 
@@ -225,5 +308,7 @@ const drawOled = (text) => {
         oled.setCursor(0, 0);
         oled.writeString(1, text, 0, true, true);
         oled.update();
+        if(text === '')
+            oledCleared = true
     });
 }
