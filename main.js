@@ -13,16 +13,10 @@ const button2 = new Gpio(19, 'in', 'rising', {debounceTimeout: 10})
 let isPlaying = false
 let inCat = false
 const categories = ['Jokes', 'Weather', 'Next Bus']
+const cities = ['Mariakerke', 'Ghent', 'Antwerpen', 'Brussel']
 let catIndex = 0
-
-fetch(`https://api.openweathermap.org/data/2.5/weather?q=mariakerke&units=metric&appid=f38af33bc60ddd081f0bf546afb23f4a`)
-    .then(response => response.json())
-    .then((responseJson)=> {
-        if(responseJson.weather) {
-            console.log(responseJson)
-        }
-    })
-    .catch(error=>console.log(error))
+let cityIndex = 0
+let weather = []
 
 const updateMenu = () => {
     oled.begin(() => {
@@ -61,13 +55,16 @@ button2.watch((err, value) => {
     if (err) {
       throw err;
     }
+    if(!inCat) {
+        if(catIndex < 2)
+            ++catIndex
+        else
+            catIndex = 0
+    }
 
     inCat = false
-
-    if(catIndex < 2)
-        ++catIndex
-    else
-        catIndex = 0
+    cityIndex = 0
+    weather = []
 
     updateMenu()
   });
@@ -95,13 +92,26 @@ const handleSelectedCat = () => {
             break
 
         case 'Weather':
-            oled.begin(function(){
-                oled.clearDisplay();
-                oled.setCursor(1, 1);
-                oled.writeString(1, 'Hier komt het weer', 0, true, true);
-                oled.update();
-            });
-            inCat = true
+            if(!inCat) {
+                inCat = true
+                fetchWeather()
+            } else {
+                console.log(weather)
+                oled.begin(function(){
+                    oled.clearDisplay();
+                    oled.setCursor(1, 1);
+                    oled.writeString(1, weather[cityIndex].city, 0, true, true);
+                    oled.setCursor(1, 14);
+                    oled.writeString(1, weather[cityIndex].temp + '°C', 0, true, true);
+                    oled.setCursor(1, 27);
+                    oled.writeString(1, weather[cityIndex].description, 0, true, true);
+                    oled.update();
+                });
+                if(cityIndex < 3)
+                    ++cityIndex
+                else
+                    cityIndex = 0
+            }
             break
 
         case 'Next Bus':
@@ -148,6 +158,39 @@ const playSound = () => {
     player.on('error', function(err) {
         console.log('Error occurred:', err);
     });
+}
+
+const fetchWeather = () => {
+    oled.begin(function(){
+        oled.clearDisplay();
+        oled.setCursor(1, 1);
+        oled.writeString(1, 'Fetching Weather...', 0, true, true);
+        oled.update();
+    });
+    
+    new Promise((resolve, reject) => {
+        cities.forEach((city, index) => {
+            fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=f38af33bc60ddd081f0bf546afb23f4a`)
+            .then(response => response.json())
+            .then((responseJson)=> {
+                if(responseJson.weather) {
+                    weather.push({
+                        city: city,
+                        temp: responseJson.main.temp,
+                        description: responseJson.weather[0].description,
+                    
+                    })
+                    console.log([index, cities.length - 1])
+                    if (index === cities.length - 1) resolve()
+                }
+            })
+            .catch(error=>console.log(error))
+        })
+    })
+    .then(() => {
+        console.log('resolved lol')
+        handleSelectedCat()
+    })
 }
 
 const fetchJoke = () => {
