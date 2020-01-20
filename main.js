@@ -15,7 +15,7 @@ const button2 = new Gpio(19, 'in', 'rising', {debounceTimeout: 10})
 let isPlaying = false
 let inCat = false
 let oledCleared = false
-const categories = ['Jokes', 'Weather', 'News', 'Next Bus', 'Exit']
+const categories = ['Jokes', 'Weather', 'News', 'Next Busses', 'Exit']
 const cities = ['Mariakerke', 'Ghent', 'Antwerpen', 'Brussel', 'Rome', 'Moscow']
 let catIndex = 0
 let cityIndex = 0
@@ -28,7 +28,7 @@ let busses = []
 const updateMenu = () => {
     oledCleared = false
     oled.begin(() => {
-        if(categories[catIndex] === 'Next Bus') {
+        if(categories[catIndex] === 'Next Busses') {
             oled.clearDisplay();
             oled.setCursor(1, 16);
             oled.writeString(2, categories[catIndex], 0, true, true);
@@ -80,6 +80,7 @@ button2.watch((err, value) => {
 
     inCat = false
     cityIndex = 0
+    bussesIndex = 0
     weather = []
 
     updateMenu()
@@ -115,17 +116,19 @@ const handleSelectedCat = () => {
                     oled.setCursor(1, 27);
                     oled.writeString(1, weather[cityIndex].description, 0, true, true);
                     oled.update();
+
+                    if(cityIndex < weather.length - 1)
+                        ++cityIndex
+                    else
+                        cityIndex = 0
                 });
-                if(cityIndex < weather.length - 1)
-                    ++cityIndex
-                else
-                    cityIndex = 0
             }
             break
 
-        case 'Next Bus':
+        case 'Next Busses':
             if(!inCat) {
                 inCat = true
+                busses = []
                 fetchBusses()
             } else {
                 oled.begin(function(){
@@ -137,11 +140,12 @@ const handleSelectedCat = () => {
                     oled.setCursor(1, 27);
                     oled.writeString(1, busses[bussesIndex].bestemming, 0, true, true);
                     oled.update();
+
+                    if(bussesIndex < busses.length - 1)
+                        ++bussesIndex
+                    else
+                        bussesIndex = 0
                 });
-                if(bussesIndex < busses.length - 1)
-                    ++bussesIndex
-                else
-                    bussesIndex = 0
             }
             break
 
