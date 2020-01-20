@@ -277,18 +277,6 @@ const fetchBusses = () => {
     })
 }
 
-function pad(num) { 
-  return ("0"+num).slice(-2);
-}
-
-function getTimeFromDate(timestamp) {
-  var date = new Date(timestamp * 1000);
-  var hours = date.getHours();
-  var minutes = date.getMinutes();
-  var seconds = date.getSeconds();
-  return pad(hours)+":"+pad(minutes)+":"+pad(seconds)
-}
-
 const fetchJoke = () => {
     drawOled('Fetching Joke...')
 
