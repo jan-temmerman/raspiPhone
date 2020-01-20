@@ -227,10 +227,3 @@ const drawOled = (text) => {
         oled.update();
     });
 }
-
-// Text example (kor and eng
-// PNG example (128x64 png only)
-/*pngtolcd("a.png", false, function(err, bitmap) {
-  oled.buffer = bitmap;
-  oled.update();
-})*/
