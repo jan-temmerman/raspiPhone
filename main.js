@@ -5,6 +5,8 @@ var txtomp3 = require("text-to-mp3")
 const fetch = require("node-fetch");
 var Gpio = require('onoff').Gpio;
 const Oled = require('oled-disp');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const oled = new Oled({ width: 128, height: 64, dcPin: 23, rstPin : 24}); // 7pin spi, rasp
 const button = new Gpio(26, 'in', 'rising', {debounceTimeout: 10})
@@ -12,11 +14,13 @@ const button2 = new Gpio(19, 'in', 'rising', {debounceTimeout: 10})
 
 let isPlaying = false
 let inCat = false
-const categories = ['Jokes', 'Weather', 'Next Bus']
-const cities = ['Mariakerke', 'Ghent', 'Antwerpen', 'Brussel']
+const categories = ['Jokes', 'Weather', 'News', 'Next Bus']
+const cities = ['Mariakerke', 'Ghent', 'Antwerpen', 'Brussel', 'Rome', 'Moscow']
 let catIndex = 0
 let cityIndex = 0
+let articleIndex = 0
 let weather = []
+let articles = []
 
 const updateMenu = () => {
     oled.begin(() => {
@@ -56,7 +60,7 @@ button2.watch((err, value) => {
       throw err;
     }
     if(!inCat) {
-        if(catIndex < 2)
+        if(catIndex < categories.length - 1)
             ++catIndex
         else
             catIndex = 0
@@ -100,7 +104,7 @@ const handleSelectedCat = () => {
                     oled.writeString(1, weather[cityIndex].description, 0, true, true);
                     oled.update();
                 });
-                if(cityIndex < 3)
+                if(cityIndex < weather.length - 1)
                     ++cityIndex
                 else
                     cityIndex = 0
@@ -110,6 +114,19 @@ const handleSelectedCat = () => {
         case 'Next Bus':
             drawOled('Hier komt de volgende bus')
             inCat = true
+            break
+
+        case 'News':
+            if(!inCat) {
+                inCat = true
+                fetchNews()
+            } else {
+                drawOled(articles[articleIndex].title)
+                if(articleIndex < articles.length - 1)
+                    ++articleIndex
+                else
+                    articleIndex = 0
+            }
             break
 
         default:
@@ -148,7 +165,7 @@ const fetchWeather = () => {
 
     new Promise((resolve, reject) => {
         cities.forEach((city, index) => {
-            fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=f38af33bc60ddd081f0bf546afb23f4a`)
+            fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.WEATHER_API_KEY}`)
             .then(response => response.json())
             .then((responseJson)=> {
                 if(responseJson.weather) {
@@ -165,6 +182,22 @@ const fetchWeather = () => {
         })
     })
     .then(() => {
+        handleSelectedCat()
+    })
+}
+
+const fetchNews = () => {
+    drawOled('Fetching News...')
+
+    fetch(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWS_API_KEY}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        },
+    })
+    .then((resp) => resp.json()) // Transform the data into json
+    .then((data) => {
+        articles = data.articles
         handleSelectedCat()
     })
 }
@@ -189,7 +222,7 @@ const fetchJoke = () => {
 const drawOled = (text) => {
     oled.begin(function(){
         oled.clearDisplay();
-        oled.setCursor(1, 1);
+        oled.setCursor(0, 0);
         oled.writeString(1, text, 0, true, true);
         oled.update();
     });
