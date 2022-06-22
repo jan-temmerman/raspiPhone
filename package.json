@@ -4,7 +4,7 @@
   "description": "phone that talks on demand",
   "main": "main.js",
   "dependencies": {
-    "async": "^3.1.0",
+    "async": "^3.2.2",
     "dotenv": "^8.2.0",
     "node-fetch": "^2.6.0",
     "oled-disp": "^1.2.4",
